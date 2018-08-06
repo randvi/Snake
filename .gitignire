@@ -1,0 +1,3 @@
+# Ignore Visuial Studio Code files
+.vscode/
+*.exe
