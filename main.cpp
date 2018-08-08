@@ -27,10 +27,6 @@ struct coord {
     short y;
 };
 
-coord snake[MAX_SNAKE];
-coord fruit;
-int speed = 200; // delay im ms
-
 void print_score(int sc); 
 void print_status(const char *s, short c = LightGreen);
 void set_text_color(int font, int bgr = -1);
@@ -38,6 +34,24 @@ void goto_xy(short x, short y);
 void setup();
 void draw_field();
 void draw_snake();
+
+class Fruit {
+public:
+    int x, y;
+    void New() {
+        x = rand() % width;
+        y = rand() % hight;
+    }
+    void draw_fruit() {
+        set_text_color(LightGreen, Gray);
+        cout << "@"; 
+        set_text_color(Black, Gray); 
+    }
+} fruit;
+
+coord snake[MAX_SNAKE];
+int speed = 200; // delay im ms
+
 
 void set_text_color(int font, int bgr) {
     if (font < 0 || font > 15)
@@ -126,8 +140,8 @@ void setup() {
     print_status("Playing");
      // randomize
     srand(time(NULL));
-    fruit.x = rand() % width;
-    fruit.y = rand() % hight;
+    fruit.New();
+    fruit.draw_fruit();
     // init snake;
     snake[0].x = width / 2;
     snake[0].y = hight / 2;
@@ -198,12 +212,6 @@ void check_kbd() {
 }
 
 
-void draw_fruit() {
-    set_text_color(LightGreen, Gray);
-    cout << "@"; 
-    set_text_color(Black, Gray); 
-}
-
 void draw_snake_element() {
     set_text_color(LightYellow, Gray);
     cout << "$"; 
@@ -216,7 +224,7 @@ void draw_field() {
         for (int j = 0 ; j < width; j++) {
             goto_xy(3 + j, 2 + i);
             if (j == fruit.x && i == fruit.y)
-                draw_fruit();
+                fruit.draw_fruit();
             else if ((j == snake[0].x) && (i == snake[0].y))
                 draw_snake_element();
             else 
@@ -253,6 +261,10 @@ void tick() {
             snake[0].x++; 
             break;
     }
+    if (snake[0].x < 0) dir =  RIGHT;
+    if (snake[0].y < 0) dir =  DOWN;
+    if (snake[0].x > width) dir =  LEFT;
+    if (snake[0].y > hight) dir =  UP;
 }
 
 int main() {
