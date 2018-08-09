@@ -9,7 +9,7 @@
 
 using namespace std; 
 
-enum Diraction {RIGHT, LEFT, UP, DOWN};
+enum class Direction {RIGHT, LEFT, UP, DOWN};
 
 enum colors {Black, Blue, Green, Aqua, Red, Purple, Yellow, White , Gray,
 	    LightBlue, LightGreen, LightAqua, LightRed, LightPurple, LightYellow, BrightWhite};
@@ -19,39 +19,172 @@ const int width = 77;
 const int hight = 20;
 int score = 0;
 bool game_over = false;
-Diraction dir = UP;
-int snake_size = 4;
+Direction dir = Direction::UP;
+// delay im ms
+int speed = 200; 
 
-struct coord {
-    short x;
-    short y;
-};
-
-void print_score(int sc); 
-void print_status(const char *s, short c = LightGreen);
 void set_text_color(int font, int bgr = -1);
 void goto_xy(short x, short y);
 void setup();
-void draw_field();
-void draw_snake();
+class Snake;
+class Fruit;
+
+class GameBoard {
+public:
+    static char board[hight][width];
+    const int board_bg = Black;
+    GameBoard(){
+        for(int i = 0; i < hight; ++i)
+            for(int j = 0; j < width; ++j)
+                board[i][j] = ' ';
+    }
+    
+    void paint();
+    void print_score(int sc) {
+        goto_xy(73,25);
+        set_text_color(LightRed, Gray);
+        cout << sc*10;
+    }
+
+    void print_status(const char *s,  short c = LightGreen) {
+        goto_xy(71,27);
+        set_text_color(c, Gray);
+        cout << s;
+        for(int i = strlen(s) ; i < 8; ++i)
+            cout << (" ");
+    }
+
+private:
+    void draw_fruit();
+    void draw_snake_item();
+} snake_board;
+
+char GameBoard::board[hight][width] = {};
 
 class Fruit {
 public:
     int x, y;
+    static const char fruit_symbol = '@';
     void New() {
         x = rand() % width;
         y = rand() % hight;
     }
-    void draw_fruit() {
-        set_text_color(LightGreen, Gray);
-        cout << "@"; 
-        set_text_color(Black, Gray); 
+    void draw() {
+        GameBoard::board[y][x] = Fruit::fruit_symbol;
     }
 } fruit;
 
-coord snake[MAX_SNAKE];
-int speed = 200; // delay im ms
 
+class Snake {
+public:
+    static const char snake_symbol = '$';
+    Snake() {
+        snake_size = 4;
+        s[0].x = width / 2;
+        s[0].y = hight / 2;
+        for (int i = 1; i < snake_size; ++i){
+            s[i].x = s[0].x;
+            s[i].y = s[i-1].y + 1;
+        }
+    }
+    
+    void move(Direction dir){
+        clear_tail();
+        for (int i = snake_size; i > 0; i--) {
+            s[i].x = s[i-1].x;
+            s[i].y = s[i-1].y;
+        }
+        switch (dir) {
+            case Direction::UP:
+                if (s[0].y != 0) {
+                    s[0].y--; 
+                } else {
+                    s[0].y = hight - 1;
+                    // clear();
+                    // snake_size = 2;
+                    // s[0].y = 1;
+                    // s[1].y = 0;
+                    // s[1].x = s[0].x;
+                    // dir = Direction::DOWN;
+                }
+                break;
+            case Direction::DOWN:
+                s[0].y++; 
+                break;
+            case Direction::LEFT:
+                s[0].x--; 
+                break; 
+            case Direction::RIGHT:
+                s[0].x++; 
+                break;
+        }
+        // if (snake[0].x < 0) { 
+        //     clear();
+        //     dir =  Direction::RIGHT;
+        //     return;
+        // }
+        // // if (snake[0].y < 0) dir =  Direction::DOWN;
+        // if (snake[0].x > width) dir =  Direction::LEFT;
+        // if (snake[0].y > hight) dir =  Direction::UP;
+ 
+    } 
+    void draw() {
+        for (int i = 0; i < snake_size; ++i){
+            int x = s[i].x;
+            int y = s[i].y;
+            GameBoard::board[y][x] = snake_symbol;
+        }
+    }
+private:
+    int snake_size;
+    struct coord {
+        int x;
+        int y;
+    } s[MAX_SNAKE];
+    
+    void clear_tail() {
+        int x = s[snake_size-1].x;
+        int y = s[snake_size-1].y;
+        GameBoard::board[y][x] = ' ';
+    }
+    void clear() {
+        for (int i = 0; i < snake_size; ++i){
+            int x = s[i].x;
+            int y = s[i].y;
+            GameBoard::board[y][x] = ' ';
+        }
+    }
+
+} snake;
+
+void GameBoard::paint() {
+    set_text_color(Gray, Gray);
+    for (int i = 0; i < hight; ++i) {
+        for (int j = 0 ; j < width; j++) {
+            goto_xy(3 + j, 2 + i);
+            char ch = board[i][j];
+            if (ch == ' ') {
+                cout << ' ';
+            } else if (ch == Snake::snake_symbol) { 
+                draw_snake_item();
+            } else if (ch == Fruit::fruit_symbol) {
+                draw_fruit();
+            }
+        }
+    }
+}
+
+void GameBoard::draw_fruit() {
+        set_text_color(LightGreen, Gray);
+        cout << Fruit::fruit_symbol; 
+        set_text_color(Black, Gray); 
+
+    }
+void GameBoard::draw_snake_item() {
+    set_text_color(LightYellow, Gray);
+    cout << Snake::snake_symbol;
+    set_text_color(Black, Gray);
+}
 
 void set_text_color(int font, int bgr) {
     if (font < 0 || font > 15)
@@ -73,7 +206,7 @@ void setup() {
     cursor.dwSize=1;
     cursor.bVisible=false;
     SetConsoleCursorInfo(GetStdHandle(STD_OUTPUT_HANDLE), &cursor);
-   
+    // setup screen mode
     system("mode con:cols=83 lines=30");
     system("title Snake Game - www.pinmode.by");
     set_text_color(Gray, Gray);
@@ -136,36 +269,17 @@ void setup() {
     set_text_color(LightBlue, Gray);
     cout << "www.pinMode.by";
 
-    print_score(score);
-    print_status("Playing");
+    snake_board.print_score(score);
+    snake_board.print_status("Playing");
      // randomize
     srand(time(NULL));
+   
+    snake.draw();
     fruit.New();
-    fruit.draw_fruit();
-    // init snake;
-    snake[0].x = width / 2;
-    snake[0].y = hight / 2;
-    for (int i = 1; i < snake_size; ++i){
-        snake[i].x = snake[0].x;
-        snake[i].y = snake[i-1].y + 1;;
-    }
-    draw_field();
-    draw_snake();
+    fruit.draw();
+    snake_board.paint();
+    
 }
-
-void print_score(int sc) {
-    goto_xy(73,25);
-    set_text_color(LightRed, Gray);
-    cout << sc*10;
-}
-
-void print_status(const char *s, short c) {
-    goto_xy(71,27);
-    set_text_color(c, Gray);
-    cout << s;
-    for(int i = strlen(s) ; i < 8; ++i)
-        cout << (" ");
-} 
 
 void check_kbd() {
     if (kbhit()) {
@@ -175,27 +289,27 @@ void check_kbd() {
         if (ch == -32) {
             switch (getch()) {
                 case 72:
-                    if (dir != DOWN)
-                        dir = UP;
+                    if (dir != Direction::DOWN)
+                        dir = Direction::UP;
                     break;
                 case 80:
-                    if (dir != UP)
-                        dir = DOWN;
+                    if (dir !=Direction::UP)
+                        dir = Direction::DOWN;
                     break;
                 case 75:
-                    if (dir != RIGHT) 
-                        dir = LEFT;
+                    if (dir != Direction::RIGHT) 
+                        dir = Direction::LEFT;
                     break; 
                 case 77:
-                    if (dir != LEFT)
-                        dir = RIGHT;
+                    if (dir != Direction::LEFT)
+                        dir = Direction::RIGHT;
                     break;
             }
         } else {
             if (ch == 'q' or ch == 'Q') 
                 game_over = true;
             else if (ch == ' ') {
-                print_status("Pause");
+                snake_board.print_status("Pause");
                 while(1) {
                     char z=getch();
                     if(z == 'q') {
@@ -205,82 +319,31 @@ void check_kbd() {
                     if(z == ' ')
                         break;
                 }
-                print_status("Playing");
+                snake_board.print_status("Playing");
             }
         }
     }
 }
 
-
-void draw_snake_element() {
-    set_text_color(LightYellow, Gray);
-    cout << "$"; 
-    set_text_color(Black, Gray); 
-}
-
-void draw_field() {
-    set_text_color(Gray, Gray);
-    for (int i = 0; i < hight; ++i) {
-        for (int j = 0 ; j < width; j++) {
-            goto_xy(3 + j, 2 + i);
-            if (j == fruit.x && i == fruit.y)
-                fruit.draw_fruit();
-            else if ((j == snake[0].x) && (i == snake[0].y))
-                draw_snake_element();
-            else 
-                cout << ' ';
-        } 
-    }  
-} 
-
-void draw_snake() {
-    set_text_color(LightYellow, Gray);
-    for (int i = 0; i < snake_size; ++i) {
-        goto_xy(3 + snake[i].x, 2 + snake[i].y);
-        cout << "$";
-    } 
-    set_text_color(Black, Gray);
-}
-
 void tick() {
-    for (int i = snake_size; i > 0; i--) {
-        snake[i].x = snake[i-1].x;
-        snake[i].y = snake[i-1].y;
-    }
-    switch (dir) {
-        case UP:
-            snake[0].y--; 
-            break;
-        case DOWN:
-            snake[0].y++; 
-            break;
-        case LEFT:
-            snake[0].x--; 
-            break; 
-        case RIGHT:
-            snake[0].x++; 
-            break;
-    }
-    if (snake[0].x < 0) dir =  RIGHT;
-    if (snake[0].y < 0) dir =  DOWN;
-    if (snake[0].x > width) dir =  LEFT;
-    if (snake[0].y > hight) dir =  UP;
+    snake.move(dir);
 }
 
 int main() {
     setup();
     // goto_xy(20, 10);
     // cout << "x = " << fruit.x << " " << "y = " << fruit.y;
-    char ch = getch();
+    // char ch = getch();
 
 	while (!game_over) {
 
         check_kbd();
-        // char ch = getch();
+        //char ch = getch();
         tick();
-        draw_field();
-        draw_snake();
-        Sleep(300);//speed
+        snake.draw();
+        snake_board.paint();
+    
+        Sleep(100);//speed
     }
 	
     return 0;
