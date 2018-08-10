@@ -96,17 +96,7 @@ public:
         }
         switch (dir) {
             case Direction::UP:
-                if (s[0].y != 0) {
-                    s[0].y--; 
-                } else {
-                    s[0].y = hight - 1;
-                    // clear();
-                    // snake_size = 2;
-                    // s[0].y = 1;
-                    // s[1].y = 0;
-                    // s[1].x = s[0].x;
-                    // dir = Direction::DOWN;
-                }
+                s[0].y--; 
                 break;
             case Direction::DOWN:
                 s[0].y++; 
@@ -123,17 +113,22 @@ public:
         //     dir =  Direction::RIGHT;
         //     return;
         // }
-        // // if (snake[0].y < 0) dir =  Direction::DOWN;
-        // if (snake[0].x > width) dir =  Direction::LEFT;
-        // if (snake[0].y > hight) dir =  Direction::UP;
- 
+        if (s[0].y < 0) s[0].y = hight - 1;
+        if (s[0].y >= hight) s[0].y = 0;
+        if (s[0].x >= width) s[0].x = 0;
+        if (s[0].x < 0) s[0].x = width - 1;
     } 
+    
     void draw() {
         for (int i = 0; i < snake_size; ++i){
             int x = s[i].x;
             int y = s[i].y;
             GameBoard::board[y][x] = snake_symbol;
         }
+    }
+    bool eat_fruit(Fruit & f) {
+        return (fruit.x == s[0].x && fruit.y == s[0].y);
+
     }
 private:
     int snake_size;
@@ -340,9 +335,11 @@ int main() {
         check_kbd();
         //char ch = getch();
         tick();
+        if (snake.eat_fruit(fruit))
+            fruit.New();
+        fruit.draw();
         snake.draw();
         snake_board.paint();
-    
         Sleep(100);//speed
     }
 	
